@@ -13,6 +13,26 @@ const cellSize = 100;
 const cellGap = 3;
 const gameGrid = [];
 
+// mouse
+const mouse = {
+    x: 10,
+    y: 10,
+    width: 0.1,
+    height: 0.1
+}
+
+let canvasPosition = canvas.getBoundingClientRect();
+
+canvas.addEventListener('mousemove', (e) => {
+    mouse.x = e.x - canvasPosition.left;
+    mouse.y = e.y - canvasPosition.top;
+});
+
+canvas.addEventListener('mouseleave', (e) => {
+    mouse.x = undefined;
+    mouse.y = undefined;
+});
+
 // colors
 const black = { r: 0, g: 0, b: 0, a: 255 };
 const blue = { r: 0, g: 0, b: 255, a: 255 };
@@ -41,20 +61,22 @@ class Cell {
         this.height = cellSize;
     }
     draw() {
-        const points = [{
-            x: this.x,
-            y: this.y,
-        }, {
-            x: this.x + this.width,
-            y: this.y,
-        }, {
-            x: this.x + this.width,
-            y: this.y + this.height,
-        }, {
-            x: this.x,
-            y: this.y + this.height,
-        }]
-        graph.polygon(points, black);
+        if (mouse.x && mouse.y && collision(this, mouse)) {
+            const points = [{
+                x: this.x,
+                y: this.y,
+            }, {
+                x: this.x + this.width,
+                y: this.y,
+            }, {
+                x: this.x + this.width,
+                y: this.y + this.height,
+            }, {
+                x: this.x,
+                y: this.y + this.height,
+            }]
+            graph.polygon(points, black);
+        }
     }
 }
 
@@ -84,3 +106,14 @@ function animate() {
 }
 
 animate();
+
+function collision(first, second) {
+    if (!(first.x > second.x + second.width ||
+        first.x + first.width < second.x ||
+        first.y > second.y + second.height ||
+        first.y + first.height < second.y)
+    ) {
+        return true;
+    }
+    return false;
+}
