@@ -12,6 +12,8 @@ const graph = new GrafLib(canvas.width, canvas.height, imgData);
 const cellSize = 100;
 const cellGap = 3;
 const gameGrid = [];
+const defenders = [];
+let numberOfResources = 300;
 
 // mouse
 const mouse = {
@@ -96,12 +98,86 @@ function handleGameGrid() {
     }
 }
 
+// projectiles
+// defenders
+class Defender {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = cellSize;
+        this.height = cellSize;
+        this.shooting = false;
+        this.health = 100;
+        this.projectile = [];
+        this.timer = 0;
+    }
+    draw() {
+        const points = [{
+            x: this.x,
+            y: this.y,
+        }, {
+            x: this.x + this.width,
+            y: this.y,
+        }, {
+            x: this.x + this.width,
+            y: this.y + this.height,
+        }, {
+            x: this.x,
+            y: this.y + this.height,
+        }]
+        graph.fill_polygon(points, blue);
+    }
+
+    drawText() {
+        ctx.fillStyle = 'gold';
+        ctx.font = '20px Arial'
+        ctx.fillText(Math.floor(this.health), Math.floor(this.x + this.width / 3), Math.floor(this.y + this.height / 2));
+    }
+}
+
+canvas.addEventListener('click', () => {
+    const gridPositionX = mouse.x - mouse.x % cellSize;
+    const gridPositionY = mouse.y - mouse.y % cellSize;
+    
+    if (gridPositionY < cellSize) return;
+    for (let i = 0; i < defenders.length; i++) {
+        if (defenders[i].x === gridPositionX && defenders[i].y === gridPositionY)
+            return;
+    }
+
+    let defenderCost = 100;
+    if (numberOfResources >= defenderCost) {
+        defenders.push(new Defender(gridPositionX, gridPositionY));
+        numberOfResources -= 100;
+    }
+});
+
+function handleDefenders() {
+    for (let i = 0; i < defenders.length; i++) {
+        defenders[i].draw();
+    }
+}
+
+function handleDefendersText() {
+    for (let i = 0; i < defenders.length; i++) {
+        defenders[i].drawText();
+    }
+}
 // utilities
+
+function handleGameStatus() {
+    ctx.fillStyle = 'gold';
+    ctx.font = '30px Arial';
+    ctx.fillText(`Resources: ${numberOfResources}`, 20, 55)
+}
 function animate() {
     graph.clearScreen(ctx);
     drawControlsBar();
     handleGameGrid();
+    handleDefenders();
     ctx.putImageData(graph.image_data, 0, 0);
+    handleDefendersText();
+    handleGameStatus();
     requestAnimationFrame(animate);
 }
 
