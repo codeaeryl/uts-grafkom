@@ -8,18 +8,35 @@ canvas.height = 600;
 // global variable
 const cellSize = 100;
 const cellGap = 3;
-const gameGrid = [];
-const defenders = [];
+const winningScore = 200;
+const amounts = [30, 40, 50];
+const defenderCost = 100;
+const defenderInterval = 100;
+const resourceInterval = 500;
+const enemiesResourceGain = 0.1;
+const enemiesMinInterval = 150;
+const enemiesSpeedup = 60;
+const enemiesDamage = 0.2;
+
 let numberOfResources = 300;
-const enemies = [];
-const enemyPosition = [];
 let enemiesInterval = 600;
 let frame = 0;
 let gameOver = false;
-const projectiles = [];
 let score = 0;
+let canvasPosition = canvas.getBoundingClientRect();
+
+const gameGrid = [];
+const defenders = [];
+const enemies = [];
+const enemyPosition = [];
+const projectiles = [];
 const resources = [];
-const winningScore = 100;
+
+// colors
+const black = { r: 0, g: 0, b: 0, a: 255 };
+const blue = { r: 0, g: 0, b: 255, a: 255 };
+const red = { r: 255, g: 0, b: 0, a: 255 };
+const yellow = { r: 255, g: 255, b: 0, a: 255 };
 
 let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 const graph = new GrafLib(canvas.width, canvas.height, imgData, cellSize);
@@ -32,8 +49,6 @@ const mouse = {
     height: 0.1
 }
 
-let canvasPosition = canvas.getBoundingClientRect();
-
 canvas.addEventListener('mousemove', (e) => {
     mouse.x = e.x - canvasPosition.left;
     mouse.y = e.y - canvasPosition.top;
@@ -43,12 +58,6 @@ canvas.addEventListener('mouseleave', (e) => {
     mouse.x = undefined;
     mouse.y = undefined;
 });
-
-// colors
-const black = { r: 0, g: 0, b: 0, a: 255 };
-const blue = { r: 0, g: 0, b: 255, a: 255 };
-const red = { r: 255, g: 0, b: 0, a: 255 };
-const yellow = { r: 255, g: 255, b: 0, a: 255 };
 
 // game board
 const controlsBar = {
@@ -73,6 +82,7 @@ class Cell {
         this.width = cellSize;
         this.height = cellSize;
     }
+
     draw() {
         if (mouse.x && mouse.y && collision(this, mouse)) {
             const points = [{
@@ -119,9 +129,11 @@ class Projectile {
         this.power = 20;
         this.speed = 5;
     }
+
     update() {
         this.x += this.speed;
     }
+
     draw() {
         graph.fill_circle_buffer({ x: this.x, y: this.y }, this.width, black);
     }
@@ -138,8 +150,7 @@ function handleProjectiles() {
                 i--;
             }
         }
-
-        if (projectiles[i] && projectiles[i].x > canvas.width - cellSize) {
+        if (projectiles[i] && projectiles[i].x > canvas.width) {
             projectiles.splice(i, 1);
             i--;
         }
@@ -155,7 +166,6 @@ class Defender {
         this.height = cellSize - cellGap * 2;
         this.shooting = false;
         this.health = 100;
-        this.projectile = [];
         this.timer = 0;
     }
     draw() {
@@ -177,15 +187,16 @@ class Defender {
 
     drawText() {
         ctx.fillStyle = 'gold';
-        ctx.font = '20px Orbitron'
-        ctx.fillText(Math.floor(this.health), Math.floor(this.x + this.width / 3), Math.floor(this.y + this.height / 2));
+        ctx.font = '30px Orbitron'
+        ctx.fillText(Math.floor(this.health), this.x + 15, this.y + 30);
     }
 
     update() {
         if (this.shooting) {
             this.timer++;
-            if (this.timer % 100 === 0) {
-                projectiles.push(new Projectile(this.x + 70, this.y + 50))
+
+            if (this.timer % defenderInterval === 0) {
+                projectiles.push(new Projectile(this.x + 0.7 * cellSize, this.y + 0.5 * cellSize))
             }
         } else {
             this.timer = 0;
@@ -202,11 +213,9 @@ canvas.addEventListener('click', () => {
         if (defenders[i].x === gridPositionX && defenders[i].y === gridPositionY)
             return;
     }
-
-    let defenderCost = 100;
     if (numberOfResources >= defenderCost) {
         defenders.push(new Defender(gridPositionX, gridPositionY));
-        numberOfResources -= 100;
+        numberOfResources -= defenderCost;
     }
 });
 
@@ -214,6 +223,7 @@ function handleDefenders() {
     for (let i = 0; i < defenders.length; i++) {
         defenders[i].draw();
         defenders[i].update();
+
         if (enemyPosition.indexOf(defenders[i].y) != -1) {
             defenders[i].shooting = true;
         } else {
@@ -222,14 +232,13 @@ function handleDefenders() {
         for (let j = 0; j < enemies.length; j++) {
             if (defenders[i] && enemies[j] && collision(defenders[i], enemies[j])) {
                 enemies[j].movement = 0;
-                defenders[i].health -= 0.2
+                defenders[i].health -= enemiesDamage;
             }
             if (defenders[i] && defenders[i].health <= 0) {
                 defenders.splice(i, 1);
                 i--;
                 enemies[j].movement = enemies[j].speed;
             }
-
         }
     }
 }
@@ -247,10 +256,11 @@ class Enemy {
         this.y = verticalPosition;
         this.width = cellSize - cellGap * 2;
         this.height = cellSize - cellGap * 2;
-        this.speed = Math.random() * 0.2 + 0.4;
+        this.speed = 0.6;
         this.movement = this.speed;
         this.health = 100;
         this.maxHealth = this.health;
+        this.damage = 0.2;
     }
 
     update() {
@@ -276,8 +286,8 @@ class Enemy {
 
     drawText() {
         ctx.fillStyle = 'black';
-        ctx.font = '20px Orbitron'
-        ctx.fillText(Math.floor(this.health), Math.floor(this.x + this.width / 3), Math.floor(this.y + this.height / 2));
+        ctx.font = '30px Orbitron'
+        ctx.fillText(Math.floor(this.health), this.x + 15, this.y + 30);
     }
 }
 
@@ -286,12 +296,9 @@ function handleEnemies() {
         enemies[i].update();
         enemies[i].draw();
 
-        if (enemies[i].x < 0) {
-            gameOver = true;
-        };
-
+        if (enemies[i].x < 0) gameOver = true;
         if (enemies[i].health <= 0) {
-            let gainedResources = enemies[i].maxHealth / 10;
+            let gainedResources = enemies[i].maxHealth * enemiesResourceGain;
             numberOfResources += gainedResources;
             score += gainedResources;
             const findThisIndex = enemyPosition.indexOf(enemies[i].y);
@@ -304,7 +311,10 @@ function handleEnemies() {
         let verticalPosition = Math.floor(Math.random() * 5 + 1) * cellSize + cellGap;
         enemies.push(new Enemy(verticalPosition));
         enemyPosition.push(verticalPosition);
-        if (enemiesInterval > 120) enemiesInterval -= 100;
+        if (enemiesInterval > enemiesMinInterval)
+            enemiesInterval -= enemiesSpeedup;
+        if (enemiesInterval < enemiesMinInterval)
+            enemiesInterval = enemiesMinInterval;
     }
 }
 
@@ -315,7 +325,6 @@ function handleEnemiesText() {
 }
 
 // resource
-const amounts = [20, 30, 40];
 class Resource {
     constructor() {
         this.x = Math.random() * (canvas.width - cellSize);
@@ -324,6 +333,7 @@ class Resource {
         this.height = cellSize * 0.6;
         this.amount = amounts[Math.floor(Math.random() * amounts.length)];
     }
+
     draw() {
         const points = [{
             x: this.x,
@@ -340,6 +350,7 @@ class Resource {
         }]
         graph.fill_polygon_buffer(points, yellow);
     }
+
     drawText() {
         ctx.fillStyle = 'black';
         ctx.font = '20px Orbitron'
@@ -348,11 +359,12 @@ class Resource {
 }
 
 function handleResources() {
-    if (frame % 500 === 0 && score < winningScore) {
+    if (frame % resourceInterval === 0 && score < winningScore && enemies.length != 0) {
         resources.push(new Resource());
     }
     for (let i = 0; i < resources.length; i++) {
         resources[i].draw();
+
         if (resources[i] && mouse.x && mouse.y && collision(resources[i], mouse)) {
             numberOfResources += resources[i].amount;
             resources.splice(i, 1);
@@ -368,12 +380,12 @@ function handleResourcesText() {
 }
 
 // utilities
-
 function handleGameStatus() {
     ctx.fillStyle = 'gold';
     ctx.font = '30px Orbitron';
-    ctx.fillText(`Score: ${score}`, 20, 40);
+    ctx.fillText(`Score: ${score}/${winningScore}`, 20, 40);
     ctx.fillText(`Resources: ${numberOfResources}`, 20, 80);
+
     if (gameOver) {
         ctx.fillStyle = 'black';
         ctx.font = '90px Orbitron';
@@ -387,24 +399,25 @@ function handleGameStatus() {
         ctx.fillText(`You win with ${score} points!`, 134, 340);
     }
 }
+
 function animate() {
     graph.clearScreen(ctx);
-    console.log(enemyPosition)
+    console.log(projectiles);
     drawControlsBar();
-    handleGameGrid();
     handleDefenders();
+    handleEnemies();
     handleResources();
     handleProjectiles();
-    handleEnemies();
+    handleGameGrid();
     ctx.putImageData(graph.image_data, 0, 0);
     handleDefendersText();
-    handleResourcesText()
     handleEnemiesText();
+    handleResourcesText();
     handleGameStatus();
     frame++;
+
     if (!gameOver) requestAnimationFrame(animate);
 }
-
 animate();
 
 function collision(first, second) {
@@ -418,6 +431,6 @@ function collision(first, second) {
     return false;
 }
 
-window.addEventListener(`resize`, () => {
+window.addEventListener('resize', () => {
     canvasPosition = canvas.getBoundingClientRect();
 }) 
