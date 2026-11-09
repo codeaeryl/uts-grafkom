@@ -99,14 +99,6 @@ export default class GrafLib {
         }
     }
 
-    elipse(xc, yc, x, y, color) {
-        for (let thetha = 0 * Math.PI; thetha < Math.PI * 2; thetha += 1 / Math.max(x, y)) {
-            let x_pos = xc - x * Math.cos(thetha);
-            let y_pos = yc + y * Math.sin(thetha);
-            this.draw_dot(Math.round(x_pos), Math.round(y_pos), color);
-        }
-    }
-
     polygon(points, color) {
         for (let i = 0; i < points.length - 1; i++) {
             this.dda_line(points[i].x, points[i + 1].x, points[i].y, points[i + 1].y, color);
@@ -174,76 +166,6 @@ export default class GrafLib {
             x: point.x + translation.x,
             y: point.y + translation.y
         };
-    }
-
-    translate_multiple(points, translation) {
-        let new_points = [];
-        for (let i = 0; i < points.length; i++) {
-            new_points.push(this.translate(points[i], translation));
-        }
-        return new_points;
-    }
-
-    scale(point, scale_factor) {
-        return {
-            x: point.x * scale_factor.x,
-            y: point.y * scale_factor.y
-        };
-    }
-
-    scale_fixed_point(point, scale_factor, anchor) {
-        return {
-            x: anchor.x + ((point.x - anchor.x) * scale_factor.x),
-            y: anchor.y + ((point.y - anchor.y) * scale_factor.y)
-        };
-    }
-
-    scale_multiple(points, scale_factor) {
-        let new_points = [];
-        for (let i = 0; i < points.length; i++) {
-            new_points.push(this.scale(points[i], scale_factor));
-        }
-        return new_points;
-    }
-
-    scale_fixed_point_multiple(points, scale_factor, anchor) {
-        let new_points = [];
-        for (let i = 0; i < points.length; i++) {
-            new_points.push(this.scale_fixed_point(points[i], scale_factor, anchor));
-        }
-        return new_points;
-    }
-
-    rotate(point, angle) {
-        return {
-            x: point.x * Math.cos(angle) - point.y * Math.sin(angle),
-            y: point.y * Math.cos(angle) + point.x * Math.sin(angle)
-        };
-    }
-
-    rotate_fixed_point(point, angle, anchor) {
-        let zero_x = point.x - anchor.x;
-        let zero_y = point.y - anchor.y;
-        return {
-            x: anchor.x + (zero_x * Math.cos(angle) - zero_y * Math.sin(angle)),
-            y: anchor.y + (zero_y * Math.cos(angle) + zero_x * Math.sin(angle))
-        };
-    }
-
-    rotate_multiple(points, angle) {
-        let new_points = [];
-        for (let i = 0; i < points.length; i++) {
-            new_points.push(this.rotate(points[i], angle));
-        }
-        return new_points;
-    }
-
-    rotate_fixed_point_multiple(points, angle, anchor) {
-        let new_points = [];
-        for (let i = 0; i < points.length; i++) {
-            new_points.push(this.rotate_fixed_point(points[i], angle, anchor));
-        }
-        return new_points;
     }
 
     clearScreen(context) {
