@@ -5,9 +5,6 @@ const ctx = canvas.getContext('2d');
 canvas.width = 900;
 canvas.height = 600;
 
-let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-const graph = new GrafLib(canvas.width, canvas.height, imgData);
-
 // global variable
 const cellSize = 100;
 const cellGap = 3;
@@ -19,6 +16,9 @@ const enemyPosition = [];
 let enemiesInterval = 600;
 let frame = 0;
 let gameOver = false;
+
+let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+const graph = new GrafLib(canvas.width, canvas.height, imgData, cellSize);
 
 // mouse
 const mouse = {
@@ -131,7 +131,7 @@ class Defender {
             x: this.x,
             y: this.y + this.height,
         }]
-        graph.fill_polygon(points, blue);
+        graph.fill_polygon_buffer(points, blue);
     }
 
     drawText() {
@@ -213,7 +213,7 @@ class Enemy {
             x: this.x,
             y: this.y + this.height,
         }]
-        graph.fill_polygon(points, red);
+        graph.fill_polygon_buffer(points, red);
     }
 
     drawText() {

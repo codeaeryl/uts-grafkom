@@ -1,9 +1,12 @@
 // 2472048 Jayden Marvel Ethanael
 export default class GrafLib {
-    constructor(c_width, c_height, image_data) {
+    constructor(c_width, c_height, image_data, buffer_size) {
         this.canvas_width = c_width;
         this.canvas_height = c_height;
         this.image_data = image_data;
+        if (buffer_size) {
+            this.buffer_lib = new GrafLib(buffer_size, buffer_size, new ImageData(buffer_size, buffer_size));
+        }
     }
 
     draw_dot(x, y, color) {
@@ -267,5 +270,56 @@ export default class GrafLib {
 
         this.polygon(points, fill_color);
         this.flood_fill(x, y, replace_color, fill_color);
+    }
+
+    fill_polygon_buffer(points, fill_color) {
+        if (!this.buffer_lib) return;
+        let n = points.length;
+        if (n < 3) return;
+
+        let buf_lib = this.buffer_lib;
+        let buf_width = buf_lib.canvas_width;
+        let buf_height = buf_lib.canvas_height;
+        buf_lib.image_data.data.fill(0);
+
+        let min_x = points[0].x;
+        let min_y = points[0].y;
+        let sum_x = 0;
+        let sum_y = 0;
+        for (let i = 0; i < n; i++) {
+            if (points[i].x < min_x) min_x = points[i].x;
+            if (points[i].y < min_y) min_y = points[i].y;
+            sum_x += points[i].x;
+            sum_y += points[i].y;
+        }
+        min_x = Math.floor(min_x);
+        min_y = Math.floor(min_y);
+
+        let buf_points = [];
+        for (let i = 0; i < n; i++) {
+            buf_points.push(this.translate(points[i], { x: -min_x, y: -min_y }));
+        }
+
+        let seed_x = Math.round(sum_x / n - min_x);
+        let seed_y = Math.round(sum_y / n - min_y);
+
+        buf_lib.polygon(buf_points, fill_color);
+        buf_lib.flood_fill(seed_x, seed_y, { r: 0, g: 0, b: 0, a: 0 }, fill_color);
+
+        let buf_data = buf_lib.image_data.data;
+
+        for (let py = 0; py < buf_height; py++) {
+            for (let px = 0; px < buf_width; px++) {
+                let index = (py * buf_width + px) * 4;
+                if (buf_data[index + 3] > 0) {
+                    this.draw_dot(min_x + px, min_y + py, {
+                        r: buf_data[index],
+                        g: buf_data[index + 1],
+                        b: buf_data[index + 2],
+                        a: buf_data[index + 3]
+                    });
+                }
+            }
+        }
     }
 }
