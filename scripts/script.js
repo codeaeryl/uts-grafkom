@@ -18,6 +18,8 @@ let frame = 0;
 let gameOver = false;
 const projectiles = [];
 let score = 0;
+const resources = [];
+const winningScore = 100;
 
 let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 const graph = new GrafLib(canvas.width, canvas.height, imgData, cellSize);
@@ -46,6 +48,7 @@ canvas.addEventListener('mouseleave', (e) => {
 const black = { r: 0, g: 0, b: 0, a: 255 };
 const blue = { r: 0, g: 0, b: 255, a: 255 };
 const red = { r: 255, g: 0, b: 0, a: 255 };
+const yellow = { r: 255, g: 255, b: 0, a: 255 };
 
 // game board
 const controlsBar = {
@@ -174,7 +177,7 @@ class Defender {
 
     drawText() {
         ctx.fillStyle = 'gold';
-        ctx.font = '20px Arial'
+        ctx.font = '20px Orbitron'
         ctx.fillText(Math.floor(this.health), Math.floor(this.x + this.width / 3), Math.floor(this.y + this.height / 2));
     }
 
@@ -273,7 +276,7 @@ class Enemy {
 
     drawText() {
         ctx.fillStyle = 'black';
-        ctx.font = '20px Arial'
+        ctx.font = '20px Orbitron'
         ctx.fillText(Math.floor(this.health), Math.floor(this.x + this.width / 3), Math.floor(this.y + this.height / 2));
     }
 }
@@ -297,8 +300,8 @@ function handleEnemies() {
             i--;
         }
     }
-    if (frame % enemiesInterval === 0) {
-        let verticalPosition = Math.floor(Math.random() * 5 + 1) * cellSize;
+    if (frame % enemiesInterval === 0 && score < winningScore) {
+        let verticalPosition = Math.floor(Math.random() * 5 + 1) * cellSize + cellGap;
         enemies.push(new Enemy(verticalPosition));
         enemyPosition.push(verticalPosition);
         if (enemiesInterval > 120) enemiesInterval -= 100;
@@ -310,17 +313,78 @@ function handleEnemiesText() {
         enemies[i].drawText();
     }
 }
+
+// resource
+const amounts = [20, 30, 40];
+class Resource {
+    constructor() {
+        this.x = Math.random() * (canvas.width - cellSize);
+        this.y = Math.floor(Math.random() * 5 + 1) * cellSize + 25;
+        this.width = cellSize * 0.6;
+        this.height = cellSize * 0.6;
+        this.amount = amounts[Math.floor(Math.random() * amounts.length)];
+    }
+    draw() {
+        const points = [{
+            x: this.x,
+            y: this.y,
+        }, {
+            x: this.x + this.width,
+            y: this.y,
+        }, {
+            x: this.x + this.width,
+            y: this.y + this.height,
+        }, {
+            x: this.x,
+            y: this.y + this.height,
+        }]
+        graph.fill_polygon_buffer(points, yellow);
+    }
+    drawText() {
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Orbitron'
+        ctx.fillText(this.amount, this.x + 15, this.y + 25);
+    }
+}
+
+function handleResources() {
+    if (frame % 500 === 0 && score < winningScore) {
+        resources.push(new Resource());
+    }
+    for (let i = 0; i < resources.length; i++) {
+        resources[i].draw();
+        if (resources[i] && mouse.x && mouse.y && collision(resources[i], mouse)) {
+            numberOfResources += resources[i].amount;
+            resources.splice(i, 1);
+            i--;
+        }
+    }
+}
+
+function handleResourcesText() {
+    for (let i = 0; i < resources.length; i++) {
+        resources[i].drawText();
+    }
+}
+
 // utilities
 
 function handleGameStatus() {
     ctx.fillStyle = 'gold';
-    ctx.font = '30px Arial';
+    ctx.font = '30px Orbitron';
     ctx.fillText(`Score: ${score}`, 20, 40);
     ctx.fillText(`Resources: ${numberOfResources}`, 20, 80);
     if (gameOver) {
         ctx.fillStyle = 'black';
-        ctx.font = '60px Arial';
+        ctx.font = '90px Orbitron';
         ctx.fillText('GAME OVER', 135, 330);
+    }
+    if (score > winningScore && enemies.length === 0) {
+        ctx.fillStyle = 'black';
+        ctx.font = '60px Orbitron';
+        ctx.fillText('LEVEL COMPLETE', 130, 300);
+        ctx.font = '30px Orbitron';
+        ctx.fillText(`You win with ${score} points!`, 134, 340);
     }
 }
 function animate() {
@@ -329,10 +393,12 @@ function animate() {
     drawControlsBar();
     handleGameGrid();
     handleDefenders();
+    handleResources();
     handleProjectiles();
     handleEnemies();
     ctx.putImageData(graph.image_data, 0, 0);
     handleDefendersText();
+    handleResourcesText()
     handleEnemiesText();
     handleGameStatus();
     frame++;
@@ -351,3 +417,7 @@ function collision(first, second) {
     }
     return false;
 }
+
+window.addEventListener(`resize`, () => {
+    canvasPosition = canvas.getBoundingClientRect();
+}) 
