@@ -5,7 +5,7 @@ export default class GrafLib {
         this.canvas_height = c_height;
         this.image_data = image_data;
         if (buffer_size) {
-            this.buffer_lib = new GrafLib(buffer_size, buffer_size, new ImageData(buffer_size, buffer_size));
+            this.buffer_lib = new GrafLib(buffer_size, buffer_size, new ImageData(buffer_size+1, buffer_size+1));
         }
     }
 
@@ -77,7 +77,7 @@ export default class GrafLib {
 
         let x = radius;
         let y = 0;
-        let t1 = radius / 16;
+        let t1 = radius >> 4;
 
         while (x >= y) {
             this.draw_dot(xc + x, yc + y, color);
@@ -310,6 +310,39 @@ export default class GrafLib {
 
         for (let py = 0; py < buf_height; py++) {
             for (let px = 0; px < buf_width; px++) {
+                let index = (py * buf_width + px) * 4;
+                if (buf_data[index + 3] > 0) {
+                    this.draw_dot(min_x + px, min_y + py, {
+                        r: buf_data[index],
+                        g: buf_data[index + 1],
+                        b: buf_data[index + 2],
+                        a: buf_data[index + 3]
+                    });
+                }
+            }
+        }
+    }
+
+    fill_circle_buffer(point, radius, fill_color) {
+        if (!this.buffer_lib) return;
+
+        let buf_lib = this.buffer_lib;
+        let buf_width = buf_lib.canvas_width;
+        buf_lib.image_data.data.fill(0);
+
+        radius = Math.round(radius);
+        let size = radius * 2 + 1;
+
+        let min_x = Math.round(point.x) - radius;
+        let min_y = Math.round(point.y) - radius;
+
+        buf_lib.circle(radius, radius, radius, fill_color);
+        buf_lib.flood_fill(radius, radius, { r: 0, g: 0, b: 0, a: 0 }, fill_color);
+
+        let buf_data = buf_lib.image_data.data;
+
+        for (let py = 0; py < size; py++) {
+            for (let px = 0; px < size; px++) {
                 let index = (py * buf_width + px) * 4;
                 if (buf_data[index + 3] > 0) {
                     this.draw_dot(min_x + px, min_y + py, {
