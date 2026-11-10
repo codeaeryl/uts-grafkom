@@ -231,7 +231,6 @@ function handleDefenders() {
             defenders[i].shooting = false;
         }
         for (let j = 0; j < enemies.length; j++) {
-            enemies[j].movement = enemies[j].speed;
             if (defenders[i] && enemies[j] && collision(defenders[i], enemies[j])) {
                 enemies[j].movement = 0;
                 defenders[i].health -= enemiesDamage;
