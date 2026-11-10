@@ -8,7 +8,7 @@ canvas.height = 600;
 // global variable
 const cellSize = 100;
 const cellGap = 3;
-const winningScore = 200;
+const winningScore = 50;
 const amounts = [30, 40, 50];
 const defenderCost = 100;
 const defenderInterval = 100;
@@ -17,9 +17,11 @@ const enemiesResourceGain = 0.1;
 const enemiesMinInterval = 150;
 const enemiesSpeedup = 60;
 const enemiesDamage = 0.2;
+const startingEnemiesInterval = 600;
+const startingResources = 300
 
-let numberOfResources = 300;
-let enemiesInterval = 600;
+let numberOfResources = startingResources;
+let enemiesInterval = startingEnemiesInterval;
 let frame = 0;
 let gameOver = false;
 let score = 0;
@@ -186,7 +188,6 @@ class Defender {
     }
 
     drawText() {
-        ctx.fillStyle = 'gold';
         ctx.font = '30px Orbitron'
         ctx.fillText(Math.floor(this.health), this.x + 15, this.y + 30);
     }
@@ -230,6 +231,7 @@ function handleDefenders() {
             defenders[i].shooting = false;
         }
         for (let j = 0; j < enemies.length; j++) {
+            enemies[j].movement = enemies[j].speed;
             if (defenders[i] && enemies[j] && collision(defenders[i], enemies[j])) {
                 enemies[j].movement = 0;
                 defenders[i].health -= enemiesDamage;
@@ -285,7 +287,6 @@ class Enemy {
     }
 
     drawText() {
-        ctx.fillStyle = 'black';
         ctx.font = '30px Orbitron'
         ctx.fillText(Math.floor(this.health), this.x + 15, this.y + 30);
     }
@@ -352,7 +353,6 @@ class Resource {
     }
 
     drawText() {
-        ctx.fillStyle = 'black';
         ctx.font = '20px Orbitron'
         ctx.fillText(this.amount, this.x + 15, this.y + 25);
     }
@@ -381,28 +381,27 @@ function handleResourcesText() {
 
 // utilities
 function handleGameStatus() {
-    ctx.fillStyle = 'gold';
     ctx.font = '30px Orbitron';
     ctx.fillText(`Score: ${score}/${winningScore}`, 20, 40);
     ctx.fillText(`Resources: ${numberOfResources}`, 20, 80);
 
     if (gameOver) {
-        ctx.fillStyle = 'black';
         ctx.font = '90px Orbitron';
         ctx.fillText('GAME OVER', 135, 330);
+        ctx.font = '30px Orbitron';
+        ctx.fillText('Press Space to Restart', 135, 380);
     }
     if (score > winningScore && enemies.length === 0) {
-        ctx.fillStyle = 'black';
         ctx.font = '60px Orbitron';
         ctx.fillText('LEVEL COMPLETE', 130, 300);
         ctx.font = '30px Orbitron';
         ctx.fillText(`You win with ${score} points!`, 134, 340);
+        ctx.fillText('Press Space to Restart', 135, 380);
     }
 }
 
 function animate() {
     graph.clearScreen(ctx);
-    console.log(projectiles);
     drawControlsBar();
     handleDefenders();
     handleEnemies();
@@ -433,4 +432,24 @@ function collision(first, second) {
 
 window.addEventListener('resize', () => {
     canvasPosition = canvas.getBoundingClientRect();
-}) 
+})
+
+window.addEventListener('keypress', (e) => {
+    if ((gameOver || (score > winningScore && enemies.length === 0))
+        && e.code === 'Space') {
+        const isGameOver = gameOver;
+        numberOfResources = startingResources;
+        enemiesInterval = startingEnemiesInterval;
+        frame = 0;
+        gameOver = false;
+        score = 0;
+        defenders.splice(0, defenders.length);
+        enemies.splice(0, enemies.length);
+        enemyPosition.splice(0, enemyPosition.length);
+        projectiles.splice(0, projectiles.length);
+        resources.splice(0, resources.length);
+        if (isGameOver) {
+            animate();
+        }
+    }
+})
